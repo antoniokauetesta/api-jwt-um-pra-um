@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Usuario {
+  id     Int     @id @default(autoincrement())
+  email  String  @unique
+  senha  String
+  nome   String?
+  refreshToken String?
+  perfil Perfil?
+}
+
+model Perfil {
+  id        Int     @id @default(autoincrement())
+  bio       String?
+  fotoUrl   String?
+  usuarioId Int     @unique
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+}
