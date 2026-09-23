@@ -1,6 +1,6 @@
 # API de Usuários e Perfis
 
-Este projeto é uma API REST desenvolvida em Node.js com Express e Prisma, focada na gestão de usuários e seus perfis por meio de um relacionamento um-para-um (1:1) em banco PostgreSQL.
+Este projeto é uma API REST desenvolvida em Node.js com Express e Prisma, focada na gestão de usuários e seus perfis por meio de um relacionamento um-para-muitos (1:N) em banco PostgreSQL.
 
 A aplicação serve como base para estudos de autenticação com JWT, segurança de senha com Argon2, persistência com Prisma e organização de endpoints REST.
 
@@ -11,7 +11,7 @@ A aplicação serve como base para estudos de autenticação com JWT, segurança
 A API segue o modelo cliente/servidor, com middlewares de monitoramento e validação antes de alcançar as regras de negócio:
 
 * **Express:** gerencia os endpoints e rotas da aplicação.
-* **Prisma ORM:** abstrai a interação com as tabelas `Usuario` e `Perfil`.
+* **Prisma ORM:** abstrai a interação com as tabelas `Usuario` e `Perfil`. Um usuário pode ter vários perfis.
 * **Morgan:** registra requisições no terminal em tempo real.
 
 ---

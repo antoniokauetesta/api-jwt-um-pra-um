@@ -40,11 +40,11 @@ app.post("/usuarios", async (req, res) => {
                 email,
                 senha: senhaHash,
                 nome,
-                perfil: {
+                perfis: {
                     create: { bio, fotoUrl }
                 }
             },
-            include: { perfil: true }
+            include: { perfis: true }
         });
         
         console.log(`✅ [API] Usuário criado com sucesso! ID: ${novoUsuario.id}`);
@@ -132,7 +132,7 @@ app.get("/usuarios", verificarToken, async (req, res) => {
     console.log(`🔍 [API] Buscando todos os usuários no banco de dados...`);
     try {
         console.log(`🔑 ID do Usuário requisitante: ${req.usuarioLogadoId}`);
-        const usuarios = await prisma.usuario.findMany({ include: { perfil: true } });
+        const usuarios = await prisma.usuario.findMany({ include: { perfis: true } });
         res.json(usuarios);
     } catch (error) {
         res.status(500).json({ error: "Erro ao buscar usuarios" });
@@ -151,14 +151,11 @@ app.put("/usuarios/:id", verificarToken, async (req, res) => {
             data: {
                 email,
                 senha: senhaHash,
-                perfil: {
-                    upsert: {
-                        create: { bio, fotoUrl },
-                        update: { bio, fotoUrl }
-                    }
-                }
+                perfis: (bio !== undefined || fotoUrl !== undefined)
+                    ? { create: { bio, fotoUrl } }
+                    : undefined
             },
-            include: { perfil: true }
+            include: { perfis: true }
         });
         res.json(usuarioAtualizado);
     } catch (error) {
@@ -175,7 +172,9 @@ app.patch("/usuarios/:id", verificarToken, async (req, res) => {
         const dadosAtualizacao = {
             email,
             senha: senhaHash,
-            perfil: (bio || fotoUrl) ? { update: { bio, fotoUrl } } : undefined
+            perfis: (bio !== undefined || fotoUrl !== undefined)
+                ? { create: { bio, fotoUrl } }
+                : undefined
         };
 
         Object.keys(dadosAtualizacao).forEach(key => dadosAtualizacao[key] === undefined && delete dadosAtualizacao[key]);
@@ -183,11 +182,63 @@ app.patch("/usuarios/:id", verificarToken, async (req, res) => {
         const usuario = await prisma.usuario.update({
             where: { id: Number(id) },
             data: dadosAtualizacao,
-            include: { perfil: true }
+            include: { perfis: true }
         });
         res.json(usuario);
     } catch (error) {
         res.status(400).json({ erro: "Erro ao atualizar parcialmente", detalhe: error.message });
+    }
+});
+
+app.post("/usuarios/:id/perfis", verificarToken, async (req, res) => {
+    const { id } = req.params;
+    const { bio, fotoUrl } = req.body;
+
+    try {
+        const perfil = await prisma.perfil.create({
+            data: {
+                bio,
+                fotoUrl,
+                usuario: { connect: { id: Number(id) } }
+            }
+        });
+        res.status(201).json(perfil);
+    } catch (error) {
+        res.status(400).json({ erro: "Erro ao criar perfil", detalhe: error.message });
+    }
+});
+
+app.get("/usuarios/:id/perfis", verificarToken, async (req, res) => {
+    try {
+        const perfis = await prisma.perfil.findMany({
+            where: { usuarioId: Number(req.params.id) }
+        });
+        res.json(perfis);
+    } catch (error) {
+        res.status(500).json({ erro: "Erro ao buscar perfis", detalhe: error.message });
+    }
+});
+
+app.put("/usuarios/:id/perfis/:perfilId", verificarToken, async (req, res) => {
+    const { id, perfilId } = req.params;
+    const { bio, fotoUrl } = req.body;
+
+    try {
+        const resultado = await prisma.perfil.updateMany({
+            where: { id: Number(perfilId), usuarioId: Number(id) },
+            data: { bio, fotoUrl }
+        });
+
+        if (resultado.count === 0) {
+            return res.status(404).json({ erro: "Perfil não encontrado para este usuario" });
+        }
+
+        const perfilAtualizado = await prisma.perfil.findUnique({
+            where: { id: Number(perfilId) }
+        });
+        res.json(perfilAtualizado);
+    } catch (error) {
+        res.status(400).json({ erro: "Erro ao atualizar perfil", detalhe: error.message });
     }
 });
 
